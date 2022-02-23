@@ -26,7 +26,7 @@ batchSize = 128
 trainset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
 
 indicies = []
-imagesPerCatagory = 70
+imagesPerCatagory = 90
 catagoriesCount = {x : 0 for x in range(10)}
 for i in range(len(trainset)):
     if catagoriesCount[trainset[i][1]] < imagesPerCatagory:
@@ -48,10 +48,18 @@ trainloader = torch.utils.data.DataLoader(subset, batch_size=batchSize, shuffle=
 testset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batchSize, shuffle=False, num_workers=2)
 
-model = models.resnet50(pretrained=True)
-#print(model)
+resnet = False
+if resnet:
+    model = models.resnet50(pretrained=True)
+    print(model)
+    model.f = nn.Linear(in_features=2048, out_features=10, bias=True)
+    print(model)
+else:
+    model = models.vgg19(pretrained=True)
+    print(model)
+    model.classifier[6] = nn.Linear(in_features=4096, out_features=10, bias=True)
+    print(model)
 
-model.fc = nn.Linear(in_features=2048, out_features=10, bias=True)
 #print(model)
 model = model.to(device)
 
