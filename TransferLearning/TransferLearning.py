@@ -9,8 +9,8 @@ if torch.cuda.is_available():
     dev = "cuda:0" 
 else:  
     dev = "cpu"  
-device = torch.device('cpu')
-#device = torch.device(dev) 
+#device = torch.device('cpu')
+device = torch.device(dev) 
 
 def tmpfunc(x):
     return x.repeat(3, 1, 1)
@@ -56,9 +56,9 @@ if resnet:
     print(model)
 else:
     model = models.vgg19(pretrained=True)
-    print(model)
+    #print(model)
     model.classifier[6] = nn.Linear(in_features=4096, out_features=10, bias=True)
-    print(model)
+    #print(model)
 
 #print(model)
 model = model.to(device)
