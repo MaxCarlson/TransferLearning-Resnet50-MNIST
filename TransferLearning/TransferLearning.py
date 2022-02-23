@@ -9,8 +9,8 @@ if torch.cuda.is_available():
     dev = "cuda:0" 
 else:  
     dev = "cpu"  
-#device = torch.device('cpu')
-device = torch.device(dev) 
+device = torch.device('cpu')
+#device = torch.device(dev) 
 
 def tmpfunc(x):
     return x.repeat(3, 1, 1)
@@ -65,7 +65,7 @@ model = model.to(device)
 
 # Freeze all weights but the fully connected layer
 for i, (name, param) in enumerate(model.named_parameters()):
-    if name != 'fc.weight' and name != 'fc.bias':
+    if (resnet and name != 'fc.weight' and name != 'fc.bias') or (not resnet and name != 'classifier.6.weight' and name != 'classifier.6.bias'):
         param.requires_grad = False
 
 epochs  = 20
