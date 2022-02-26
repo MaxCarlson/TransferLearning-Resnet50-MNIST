@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>e0fdf0ee-21a0-448e-a92b-5be342d0af82</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>TransferLearning.py</StartupFile>
+    <StartupFile>SpatialTransformer.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -21,6 +21,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="SpatialTransformer.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="TransferLearning.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
