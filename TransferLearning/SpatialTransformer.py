@@ -23,37 +23,12 @@ opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 urllib.request.install_opener(opener)
 
-
-class CustomImageDataset(Dataset):
-    def __init__(self, features, labels, transform=None, target_transform=None):
-        self.features = features
-        self.labels = labels
-        self.transform = transform
-        self.target_transform = target_transform
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, idx):
-        image = self.features[idx]
-        label = self.labels[idx]
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
-
-        t = torch.from_numpy(image)
-        return torch.from_numpy(np.reshape(image, (1,28,28))), torch.from_numpy(np.ndarray(label))
-
-
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def randomDeform(x):
     return torch.from_numpy(elasticdeform.deform_random_grid(x.numpy(), sigma=25, points=3))
 
 def zoom(x):
     x = np.reshape(x.numpy(), (28,28))
-    x = elasticdeform.deform_random_grid(x, sigma=25, points=3, rotate=30, zoom=1.5)
+    x = elasticdeform.deform_random_grid(x, zoom=0.25)
     x = np.reshape(x, (1,28,28))
     return torch.from_numpy(x)
 
@@ -75,7 +50,7 @@ trainset3 = datasets.MNIST(root='.', train=True, download=True,
                               transforms.Lambda(zoom)
                               ]))
 
-testset = datasets.MNIST(root='.', train=False, 
+testset1 = datasets.MNIST(root='.', train=False, 
                          transform=transforms.Compose([
                              transforms.ToTensor(),
                              transforms.Normalize((0.1307,), (0.3081,)),
@@ -94,7 +69,7 @@ testset3 = datasets.MNIST(root='.', train=False,
                              ]))
 
 trainset = torch.utils.data.ConcatDataset([trainset1, trainset2, trainset3])
-#testset = torch.utils.data.ConcatDataset([testset1, testset2, testset3])
+testset = torch.utils.data.ConcatDataset([testset1, testset2, testset3])
 #trainset = torch.utils.data.ConcatDataset([trainset, CustomImageDataset(trainset.data.numpy(), trainset.targets.numpy(), randomDeform)])
 #trainset = trainset + CustomImageDataset(trainset.datasets[0].data.numpy(), trainset.datasets[0].targets.numpy(), zoom)
 
@@ -108,10 +83,10 @@ trainset = torch.utils.data.ConcatDataset([trainset1, trainset2, trainset3])
 
 
 # Training dataset
-batchsize = 64
-train_loader = torch.utils.data.DataLoader(trainset, batch_size=batchsize, shuffle=True, num_workers=0)
+batchsize = 256
+train_loader = torch.utils.data.DataLoader(trainset, batch_size=batchsize, shuffle=True, num_workers=2)
 # Test dataset
-test_loader = torch.utils.data.DataLoader(testset, batch_size=batchsize, shuffle=True, num_workers=0)
+test_loader = torch.utils.data.DataLoader(testset, batch_size=batchsize, shuffle=True, num_workers=2)
 
 class Net(nn.Module):
     def __init__(self):
@@ -175,12 +150,18 @@ optimizer = optim.SGD(model.parameters(), lr=0.01)
 
 
 def train(epoch):
+    correct = 0
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
 
         optimizer.zero_grad()
         output = model(data)
+
+        # get the index of the max log-probability
+        pred = output.max(1, keepdim=True)[1]
+        correct += pred.eq(target.view_as(pred)).sum().item()
+
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
@@ -188,6 +169,7 @@ def train(epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
+    return 100. * correct / len(train_loader.dataset)
 #
 # A simple test procedure to measure the STN performances on MNIST.
 #
@@ -212,6 +194,8 @@ def test():
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'
               .format(test_loss, correct, len(test_loader.dataset),
                       100. * correct / len(test_loader.dataset)))
+
+    return 100. * correct / len(test_loader.dataset)
 
 
 
@@ -253,12 +237,25 @@ def visualize_stn():
         axarr[1].imshow(out_grid)
         axarr[1].set_title('Transformed Images')
 if __name__ == '__main__':
-    for epoch in range(1, 20 + 1):
-        train(epoch)
-        test()
+    epochs = 2
+    trainacc = []
+    testacc = []
+    for epoch in range(1, epochs + 1):
+        trainacc.append(train(epoch))
+        testacc.append(test())
+
 
     # Visualize the STN transformation on some input batch
     visualize_stn()
 
     plt.ioff()
+    plt.show()
+    plt.close()
+
+    plt.plot(range(len(trainacc)), trainacc, c='g')
+    plt.plot(range(len(testacc)), testacc, c='r')
+    plt.title('Accuracy vs. Epoch')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend(['Training Acc', 'Test Acc'])
     plt.show()
