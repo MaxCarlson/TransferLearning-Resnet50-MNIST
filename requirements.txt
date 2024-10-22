@@ -1,0 +1,6 @@
+elasticdeform
+matplotlib
+numpy
+six
+torch
+torchvision
